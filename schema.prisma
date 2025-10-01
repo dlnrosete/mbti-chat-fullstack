@@ -1,0 +1,95 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  username       String    @unique
+  secondary      String?
+  email          String?
+  passwordHash   String
+  mbti           String?
+  avatar         String?
+  statusPoints   Int       @default(0)
+  createdAt      DateTime  @default(now())
+  authIp         String?
+  deleted        Boolean   @default(false)
+  // relations
+  sentReports    Report[]  @relation("reporter")
+  receivedReports Report[] @relation("target")
+  friends        Friend[]
+  lobbyMembers   LobbyMember[]
+  messages       Message[]
+}
+
+model Friend {
+  id        Int @id @default(autoincrement())
+  user      User @relation(fields: [userId], references: [id])
+  userId    Int
+  friend    User @relation("friendRelation", fields: [friendId], references: [id])
+  friendId  Int
+  createdAt DateTime @default(now())
+  @@unique([userId, friendId])
+}
+
+model Report {
+  id         Int @id @default(autoincrement())
+  reporter   User @relation("reporter", fields: [reporterId], references: [id])
+  reporterId Int
+  target     User @relation("target", fields: [targetId], references: [id])
+  targetId   Int
+  reporterIp String
+  createdAt  DateTime @default(now())
+}
+
+model Ban {
+  id Int @id @default(autoincrement())
+  user User @relation(fields:[userId], references:[id])
+  userId Int @unique
+  until DateTime
+  times Int @default(0)
+}
+
+model Lobby {
+  id        Int @id @default(autoincrement())
+  title     String
+  owner     User @relation(fields:[ownerId], references:[id])
+  ownerId   Int
+  capacity  Int @default(4)
+  private   Boolean @default(false)
+  createdAt DateTime @default(now())
+  members   LobbyMember[]
+  messages  Message[]
+}
+
+model LobbyMember {
+  id Int @id @default(autoincrement())
+  lobby Lobby @relation(fields:[lobbyId], references:[id])
+  lobbyId Int
+  user  User @relation(fields:[userId], references:[id])
+  userId Int
+  joinedAt DateTime @default(now())
+  @@unique([lobbyId,userId])
+}
+
+model Message {
+  id Int @id @default(autoincrement())
+  lobby Lobby @relation(fields:[lobbyId], references:[id])
+  lobbyId Int
+  user User @relation(fields:[userId], references:[id])
+  userId Int
+  text String
+  createdAt DateTime @default(now())
+}
+
+model DeletedUsername {
+  id Int @id @default(autoincrement())
+  username String @unique
+  deletedAt DateTime @default(now())
+}
